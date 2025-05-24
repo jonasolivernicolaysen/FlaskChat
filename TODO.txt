@@ -1,0 +1,11 @@
+problemer å fikse:
+
+chatten skal automatisk fokusere på de nederste meldingene når noen joiner så kommer de til bunns men bare for dem
+
+hvis flere har samme navn, så adder du parentes (+123) etter navnet ettersom hvem som kom først
+
+endre posisjon på name is required melding
+
+fikse en bug der hvis to personer har samme brukernavn, tror appen at de er samme person med tanke på tekstbobler osv
+
+bug: når man har skrevet både navn og room_code og trykker enter tror appen automatisk at du prøver å joine ett rom

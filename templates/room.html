@@ -1,0 +1,95 @@
+{%extends "base.html"%} 
+
+{%block title%}Flask Chatroom{%endblock%}
+
+{%block content%}
+{%if error%}
+<p id="error">{{error}}</p>
+{%endif%}
+<div class="container py-4">
+    <h1 class="text-center">Flask Chatroom</h1>
+    <p class="text-center text-muted" id="room-code">Room code: {{room}}</p>
+
+    <div class="border p-3 bg-light rounded overflow-auto mx-auto" id="messages" name="messages" style="height: 400px; width: 400px;"></div>
+    
+    <!-- this form returns false so form won't reload the page when submitted -->
+    <div class="mx-auto" style="width: 400px">
+        <form onsubmit="return false;" class="d-flex">
+            <input class="form-control" type="text" id="message-input" name="message-input" placeholder="Write a message here">
+            <button class="btn btn-primary" type="button" onclick="sendMessage()">Submit</button>
+        </form>
+    </div>
+
+<script type="text/javascript">
+    var message_input = document.getElementById("message-input");
+    message_input.addEventListener("keypress", function(event) {
+        if (event.key === "Enter") {
+            sendMessage()
+        }
+    }
+);
+
+var messages_div = document.getElementById("messages");
+messages_div.scrollTop = messages_div.scrollHeight;
+/* function logScroll() {
+    console.log(messages_div.scrollHeight);
+};
+
+setInterval(() => {
+    logScroll();
+    messages_div.scrollTop = messages_div.scrollHeight;
+}, 1000); */
+
+    var socketio = io({
+        query: {
+            room: "{{ room }}",
+            name: "{{ user }}"
+        }
+    });
+
+    // receive messages
+    socketio.on("chat_message", function(message){ 
+        console.log("Received message:", message);
+        createChatItem(message.message, message.sender);
+    });
+
+    // create message element
+    function createChatItem(message, sender) {
+        var messages = document.getElementById("messages")
+        var senderIsUser = "{{user}}" === sender
+        const alignment = senderIsUser ? "text-end" : "text-start";
+        const bg = senderIsUser ? "bg-primary text-white" : "bg-light";
+        
+        var content = 
+            `<div class="mb-2 ${alignment}">
+                <div class="d-inline-block p-2 rounded ${bg}" style="max-width: 75%;">
+                    <p class="mb-1">${message}</p>
+                    <small class="text-muted">${new Date().toLocaleTimeString()} - ${sender}</small>
+                </div>
+            </div>`
+    
+        messages.innerHTML += content;
+    };
+
+    // send message element
+    function sendMessage() {
+        var msg_input = document.getElementById("message-input")
+        var msg = msg_input.value;
+        if (msg === "") return;
+
+        socketio.emit("message", { 
+            room: "{{ room }}",
+            sender: "{{ user }}",
+            message: msg 
+        })
+        msg_input.value = "";
+    };
+
+    // this code takes the python variable messages, converts each of the items into a chat item and renders them inside the "messages" div
+    // error messages show because of conflict between JS and jinja (template engine) 
+    var messages = {{ messages | tojson | safe }} || [];  
+    messages.forEach(msg => createChatItem(msg.message, msg.sender));
+</script>
+
+</div>
+{%endblock%}

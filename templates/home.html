@@ -1,0 +1,29 @@
+{%extends "base.html"%} 
+
+{%block title%}Flask Chatroom{%endblock%}
+
+{%block content%}
+{%if error%}
+<p id="error">{{error}}</p>
+{%endif%}
+
+<div class="d-flex justify-content-center align-items-center vh-100" id="homepagecontainer">
+    <div class="p-4 border rounded bg-light" style="min-width: 300px;">
+        <h1 class="text-center mb-4">Flask Chatroom</h1>
+        <form method="post" name="chatroomform">
+            <div class="mb-3">
+                <input class="form-control" type="text" name="name-input" placeholder="Name">
+            </div>
+            <div class="row g-2 mb-3">
+                <div class="col-8">
+                  <input class="form-control" type="text" name="room-code" placeholder="Room code">
+                </div>
+                <div class="col-4">
+                  <button class="btn btn-primary w-100" type="submit" name="joinchatroombutton" value="true">Join</button>
+                </div>
+              </div>
+            <button class="btn btn-outline-secondary" type="submit" name="createchatroombutton" value="true">Create</button>
+        </form>
+    </div>
+</div>
+{%endblock%}
