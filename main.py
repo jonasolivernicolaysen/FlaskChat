@@ -1,7 +1,7 @@
 from flask import Flask, render_template, redirect, url_for, request, session
 from flask_socketio import SocketIO, join_room, leave_room, emit
 import random, string
-from db import db, Room, Message
+from db import db, Room, Members, Message
 
 
 app = Flask(__name__)
@@ -12,9 +12,10 @@ socketio = SocketIO(app)
 db.init_app(app)
 
 with app.app_context():
+    db.drop_all()
     db.create_all()
 
-def gen_room_code(length: int, existing_codes: list[str]) -> str:
+def gen_code(length: int, existing_codes: list[str]) -> str:
     while True:        
         code_chars = [random.choice(string.ascii_letters) for _ in range(length)]
         room_code = "".join(code_chars)
@@ -44,9 +45,14 @@ def home():
             if code and code.strip():
                 room_code = code
             else:
-                room_code = gen_room_code(6, [room.id for room in Room.query.all()])
-                
-            new_room = Room(id=room_code, members=0)
+                room_code = gen_code(6, [room.id for room in Room.query.all()])
+            
+            new_room = Room(id=room_code, member_count=0)
+            
+            member_id = gen_code(6, [member.id for member in Members.query.all()])
+            room_member = Members(id=member_id, room_id=room_code, member_name=name)
+            
+            db.session.add(room_member)
             db.session.add(new_room)
             db.session.commit()
             session["room"] = room_code
@@ -78,7 +84,6 @@ def room():
         return redirect(url_for("home"))
 
     messages = Message.query.filter_by(room_id=room_code).all()
-
     serialized_messages = [{"message": m.content, "sender": m.sender} for m in messages]
     
     return render_template("room.html", room=room, user=name, messages=serialized_messages)
@@ -92,13 +97,17 @@ def handle_connect():
     if not room_code or not name:
         return
     
+    
+
     session["room"] = room_code
     session["name"] = name
     join_room(room_code)
 
+    
+
     room = db.session.get(Room, room_code)
     if room:
-        room.members += 1
+        room.member_count += 1
         db.session.commit()
 
         messages = room.messages
@@ -118,8 +127,8 @@ def handle_disconnect():
     room = db.session.get(Room, room_code)
 
     if room:
-        room.members -= 1
-        if room.members <= 0:
+        room.member_count -= 1
+        if room.member_count <= 0:
             db.session.delete(room)
         db.session.commit()
 
