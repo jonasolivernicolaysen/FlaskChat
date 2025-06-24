@@ -41,22 +41,20 @@ def home():
         create = request.form.get("createchatroombutton", False)
         join = request.form.get("joinchatroombutton", False)
 
-        print("Name:", name)
-        print("Code:", type(code), len(code))
-        print("Create button clicked:", create)
-        print("Join button clicked:", join)
-
         if not name:
             return render_template("home.html", error="Name is required")
         
         if create == "true":
             if code and code.strip():
+                #existing_codes = [room.id for room in Room.query.all()]
+                #if code not in existing_codes:
                 room_code = code
+                #else:
+                    #return render_template("home.html", error="That code is already in use")
             else:
                 room_code = gen_room_code(6, [room.id for room in Room.query.all()])
-            
+                
             new_room = Room(id=room_code, member_count=0)
-            
             
             db.session.add(new_room)
             db.session.commit()
@@ -91,8 +89,12 @@ def room():
         new_member = Member(id=member_id, room_id=room_code, name=name)
         db.session.add(new_member)
 
+    # this is not needed, connect will take care of the counting
+    rooms = socketio.server.manager.rooms.get("/", {})
+    participants = rooms.get(room_code, set())
+
     room = db.session.get(Room, room_code)
-    room.member_count += 1
+    room.member_count = len(participants)
     db.session.commit()
 
     messages = Message.query.filter_by(room_id=room_code).all()
@@ -115,10 +117,11 @@ def handle_connect():
     room = db.session.get(Room, room_code)
     
     # get all active SID's
-    participants = socketio.server.manager.get_participants("/", room_code) or set()
+    rooms = socketio.server.manager.rooms.get("/", {})
+    participants = rooms.get(room_code, set())
 
     if room:
-        room.member_count += 1
+        room.member_count = len(participants)
         db.session.commit()
 
         messages = room.messages
@@ -129,6 +132,9 @@ def handle_connect():
 
 @socketio.on("disconnect")
 def handle_disconnect():
+    if session.pop("reloading", None):
+        return
+    
     room_code = session.get("room")
     name = session.get("name")
     if not room_code or not name:
@@ -137,7 +143,8 @@ def handle_disconnect():
     leave_room(room_code)
 
     # get all active SID's
-    participants = socketio.server.manager.get_participants("/", room_code) or set()
+    rooms = socketio.server.manager.rooms.get("/", {})
+    participants = rooms.get(room_code, set())
 
     room = db.session.get(Room, room_code)
 

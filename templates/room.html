@@ -68,8 +68,12 @@ setInterval(() => {
                     <small class="text-muted">${new Date().toLocaleTimeString()} - ${sender}</small>
                 </div>
             </div>`
-    
-        messages.innerHTML += content;
+            messages.innerHTML += content;
+
+           /* if (senderIsUser) {
+                messages_div.scrollTop = messages_div.scrollHeight; 
+            }
+                */
     };
 
     // send message element
