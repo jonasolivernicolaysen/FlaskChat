@@ -10,7 +10,7 @@
 <div class="d-flex justify-content-center align-items-center vh-100" id="homepagecontainer">
     <div class="p-4 border rounded bg-light" style="min-width: 300px;">
         <h1 class="text-center mb-4">Flask Chatroom</h1>
-        <form method="post" name="chatroomform">
+        <form method="post" id="chatroomform" name="chatroomform">
             <div class="mb-3">
                 <input class="form-control" type="text" name="name-input" placeholder="Name">
             </div>
@@ -19,11 +19,25 @@
                   <input class="form-control" type="text" name="room-code" placeholder="Room code">
                 </div>
                 <div class="col-4">
-                  <button class="btn btn-primary w-100" type="submit" name="joinchatroombutton" value="true">Join</button>
+                  <button class="btn btn-primary w-100" type="submit" id="joinchatroombutton" name="joinchatroombutton" value="true">Join</button>
                 </div>
               </div>
-            <button class="btn btn-outline-secondary" type="submit" name="createchatroombutton" value="true">Create</button>
+            <button class="btn btn-outline-secondary" type="submit" id="createchatroombutton" name="createchatroombutton" value="true">Create</button>
         </form>
     </div>
+
+    <script type="text/javascript">
+      const form = document.getElementById("chatroomform");
+
+      form.addEventListener("keypress", function(e) {
+        if (e.key === "Enter" && e.target.tagName === "INPUT") {
+          e.preventDefault();
+
+          document.getElementById("createchatroombutton").click();
+        }
+      }
+
+    )
+    </script>
 </div>
 {%endblock%}
