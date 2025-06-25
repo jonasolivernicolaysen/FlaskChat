@@ -1,0 +1,17 @@
+TODO:
+
+chatten skal automatisk fokusere på de nederste meldingene (når noen joiner så kommer de til bunns men bare for dem)
+
+hvis flere har samme navn, så adder du parentes (+123) etter navnet ettersom hvem som kom først
+potensielt gjøre det umulig for to brukere å ha samme brukernavn
+
+endre posisjon på name is required feilmelding
+
+fikse en bug der hvis to personer har samme brukernavn, tror appen at de er samme person med tanke på tekstbobler osv
+
+bug: når man har skrevet både navn og room_code og trykker enter tror appen automatisk at du prøver å joine ett rom
+
+bug: når noen reloader siden sier appen at de har left the chat
+
+implementere UID
+implementere members kolonne 

@@ -43,21 +43,20 @@ setInterval(() => {
     var socketio = io({
         query: {
             room: "{{ room }}",
-            name: "{{ user_name }}",
-            sender_id: "{{ user_id }}"
+            name: "{{ user }}"
         }
     });
 
     // receive messages
     socketio.on("chat_message", function(message){ 
         console.log("Received message:", message);
-        createChatItem(message.message, message.sender, message.member_id);
+        createChatItem(message.message, message.sender);
     });
 
     // create message element
-    function createChatItem(message, sender, member_id) {
-        var messages = document.getElementById("messages");
-        var senderIsUser = "{{ user_id }}" === String(member_id);
+    function createChatItem(message, sender) {
+        var messages = document.getElementById("messages")
+        var senderIsUser = "{{user}}" === sender
         const alignment = senderIsUser ? "text-end" : "text-start";
         const bg = senderIsUser ? "bg-primary text-white" : "bg-light";
         
@@ -84,8 +83,7 @@ setInterval(() => {
 
         socketio.emit("message", { 
             room: "{{ room }}",
-            sender: "{{ user_name }}",
-            sender_id: "{{ user_id }}",
+            sender: "{{ user }}",
             message: msg 
         })
         msg_input.value = "";
@@ -94,7 +92,7 @@ setInterval(() => {
     // this code takes the python variable messages, converts each of the items into a chat item and renders them inside the "messages" div
     // error messages show because of conflict between JS and jinja (template engine) 
     var messages = {{ messages | tojson | safe }} || [];  
-    messages.forEach(msg => createChatItem(msg.message, msg.sender, msg.member_id));
+    messages.forEach(msg => createChatItem(msg.message, msg.sender));
 </script>
 
 </div>

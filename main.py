@@ -1,8 +1,7 @@
 from flask import Flask, render_template, redirect, url_for, request, session
 from flask_socketio import SocketIO, join_room, leave_room, emit
 import random, string
-from random import randint
-from db import db, Room, Member, Message
+from db import db, Room, Members, Message
 
 
 app = Flask(__name__)
@@ -16,19 +15,12 @@ with app.app_context():
     db.drop_all()
     db.create_all()
 
-def gen_room_code(length: int, existing_codes: list[str]) -> str:
+def gen_code(length: int, existing_codes: list[str]) -> str:
     while True:        
         code_chars = [random.choice(string.ascii_letters) for _ in range(length)]
         room_code = "".join(code_chars)
         if room_code not in existing_codes:
             return room_code
-
-def gen_id(length: int, existing_codes: list[int]) -> int:
-    while True:        
-        code_numbers = [random.randint(0,9) for _ in range(length)]
-        id = int(''.join(map(str, code_numbers)))
-        if id not in existing_codes:
-            return id
 
 # TODO Build routes
 
@@ -52,10 +44,14 @@ def home():
                 #else:
                     #return render_template("home.html", error="That code is already in use")
             else:
-                room_code = gen_room_code(6, [room.id for room in Room.query.all()])
-                
+                room_code = gen_code(6, [room.id for room in Room.query.all()])
+            
             new_room = Room(id=room_code, member_count=0)
             
+            member_id = gen_code(6, [member.id for member in Members.query.all()])
+            room_member = Members(id=member_id, room_id=room_code, member_name=name)
+            
+            db.session.add(room_member)
             db.session.add(new_room)
             db.session.commit()
             session["room"] = room_code
@@ -82,25 +78,14 @@ def room():
     if not name or not room_code:
         return redirect(url_for("home"))
     
-    if "member_id" not in session:
-        member_id = gen_id(6, [member.id for member in Member.query.all()])
-        session["member_id"] = member_id
-
-        new_member = Member(id=member_id, room_id=room_code, name=name)
-        db.session.add(new_member)
-
-    # this is not needed, connect will take care of the counting
-    rooms = socketio.server.manager.rooms.get("/", {})
-    participants = rooms.get(room_code, set())
-
     room = db.session.get(Room, room_code)
-    room.member_count = len(participants)
-    db.session.commit()
+    if not room:
+        return redirect(url_for("home"))
 
     messages = Message.query.filter_by(room_id=room_code).all()
-    serialized_messages = [{"message": m.content, "sender": m.sender, "member_id": m.sender_id} for m in messages]
+    serialized_messages = [{"message": m.content, "sender": m.sender} for m in messages]
     
-    return render_template("room.html", room=room, user_name=name, user_id=session["member_id"], messages=serialized_messages)
+    return render_template("room.html", room=room, user=name, messages=serialized_messages)
 
 
 # handlers for session events which socket io automatically detects
@@ -110,16 +95,16 @@ def handle_connect():
     name = request.args.get("name")
     if not room_code or not name:
         return
+    
+    
+
     session["room"] = room_code
     session["name"] = name
     join_room(room_code)
 
-    room = db.session.get(Room, room_code)
     
-    # get all active SID's
-    rooms = socketio.server.manager.rooms.get("/", {})
-    participants = rooms.get(room_code, set())
 
+    room = db.session.get(Room, room_code)
     if room:
         room.member_count = len(participants)
         db.session.commit()
@@ -141,18 +126,12 @@ def handle_disconnect():
         return
     
     leave_room(room_code)
-
-    # get all active SID's
-    rooms = socketio.server.manager.rooms.get("/", {})
-    participants = rooms.get(room_code, set())
-
     room = db.session.get(Room, room_code)
 
     if room:
-        if not participants:
+        room.member_count -= 1
+        if room.member_count <= 0:
             db.session.delete(room)
-        else:
-            room.member_count = len(participants)
         db.session.commit()
 
     message = {
@@ -164,23 +143,19 @@ def handle_disconnect():
 
 @socketio.on("message")
 def handle_message(data):
-    
     room_code = data["room"]
     sender = data["sender"]
     content = data["message"]
-    member_id = session.get("member_id")
 
     # save the message to the db
-    message = Message(room_id=room_code, sender=sender, content=content, sender_id=member_id)
-
+    message = Message(room_id=room_code, sender=sender, content=content)
     db.session.add(message)
     db.session.commit()
 
     message = {
         "room": room_code,
         "sender": sender,
-        "message": data["message"],
-        "member_id": member_id,
+        "message": data["message"]
     }
     emit("chat_message", message, to=room_code)
 
