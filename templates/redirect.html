@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html>
+<body>
+    <script>
+        if (!sessionStorage.getItem("member_id")) {
+            sessionStorage.setItem("member_id", crypto.randomUUID());
+        }
+
+        const memberId = sessionStorage.getItem("member_id");
+        window.location.href = "/room?member_id=" + memberId;
+    </script>
+</body>
+</html>
