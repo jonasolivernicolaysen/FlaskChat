@@ -8,8 +8,10 @@
 {%endif%}
 <div class="container py-4">
     <h1 class="text-center">Flask Chatroom</h1>
+    <!-- display room code -->
     <p class="text-center text-muted" id="room-code">Room code: {{room}}</p>
 
+    <!-- div for the chat messages -->
     <div class="border p-3 bg-light rounded overflow-auto mx-auto" id="messages" name="messages" style="height: 400px; width: 400px;"></div>
     
     <!-- this form returns false so form won't reload the page when submitted -->
@@ -20,80 +22,65 @@
         </form>
     </div>
 
+
 <script type="text/javascript">
+    
+    const memberId = sessionStorage.getItem("member_id");
+
+    // allow pressing enter to send message
     var message_input = document.getElementById("message-input");
     message_input.addEventListener("keypress", function(event) {
-        if (event.key === "Enter") {
-            sendMessage()
-        }
-    }
-);
+        if (event.key === "Enter") sendMessage();
+    });
 
-var messages_div = document.getElementById("messages");
-messages_div.scrollTop = messages_div.scrollHeight;
-/* function logScroll() {
-    console.log(messages_div.scrollHeight);
-};
-
-setInterval(() => {
-    logScroll();
+    // auto-scroll to bottom
+    var messages_div = document.getElementById("messages");
     messages_div.scrollTop = messages_div.scrollHeight;
-}, 1000); */
 
+    // create socket connection
     var socketio = io({
         query: {
             room: "{{ room }}",
-            name: "{{ user }}"
+            name: "{{ user_name }}",
+            sender_id: memberId
         }
     });
 
-    // receive messages
-    socketio.on("chat_message", function(message){ 
-        console.log("Received message:", message);
-        createChatItem(message.message, message.sender);
+    socketio.on("chat_message", function(message) {
+        createChatItem(message.message, message.sender, message.member_id, message.timestamp);
     });
 
-    // create message element
-    function createChatItem(message, sender) {
-        var messages = document.getElementById("messages")
-        var senderIsUser = "{{user}}" === sender
+    function createChatItem(message, sender, member_id, timestamp) {
+        var messages = document.getElementById("messages");
+        var senderIsUser = String(memberId) === String(member_id);
         const alignment = senderIsUser ? "text-end" : "text-start";
         const bg = senderIsUser ? "bg-primary text-white" : "bg-light";
-        
-        var content = 
+
+        var content =
             `<div class="mb-2 ${alignment}">
                 <div class="d-inline-block p-2 rounded ${bg}" style="max-width: 75%;">
                     <p class="mb-1">${message}</p>
-                    <small class="text-muted">${new Date().toLocaleTimeString()} - ${sender}</small>
+                    <small class="text-muted">${timestamp} - ${sender}</small>
                 </div>
-            </div>`
-            messages.innerHTML += content;
+            </div>`;
+        messages.innerHTML += content;
+        // scroll down to bottom when you send a message
+        if (senderIsUser) messages_div.scrollTop = messages_div.scrollHeight;
+    }
 
-           /* if (senderIsUser) {
-                messages_div.scrollTop = messages_div.scrollHeight; 
-            }
-                */
-    };
-
-    // send message element
     function sendMessage() {
-        var msg_input = document.getElementById("message-input")
+        var msg_input = document.getElementById("message-input");
         var msg = msg_input.value;
         if (msg === "") return;
 
-        socketio.emit("message", { 
+        socketio.emit("message", {
             room: "{{ room }}",
-            sender: "{{ user }}",
-            message: msg 
-        })
+            sender: "{{ user_name }}",
+            sender_id: memberId,
+            message: msg
+        });
         msg_input.value = "";
-    };
-
-    // this code takes the python variable messages, converts each of the items into a chat item and renders them inside the "messages" div
-    // error messages show because of conflict between JS and jinja (template engine) 
-    var messages = {{ messages | tojson | safe }} || [];  
-    messages.forEach(msg => createChatItem(msg.message, msg.sender));
+    }
 </script>
-
 </div>
 {%endblock%}
