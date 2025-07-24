@@ -39,13 +39,15 @@ def home():
             return render_template("home.html", error="Name is required")
 
         session["name"] = name
+        
         # create new room
         if create == "true":
-            room_code = code if code and code.strip() else gen_room_code(6, [room.id for room in Room.query.all()])
-            if not db.session.get(Room, room_code):
-                new_room = Room(id=room_code, member_count=0)
-                db.session.add(new_room)
-                db.session.commit()
+            room_code = code.strip() if code and code.strip() else gen_room_code(6, [room.id for room in Room.query.all()])
+            if db.session.get(Room, room_code):
+                return render_template("home.html", error="Room code is already in use", name=name)
+            new_room = Room(id=room_code, member_count=0)
+            db.session.add(new_room)
+            db.session.commit()
             session["room"] = room_code
             return render_template("redirect.html")
 

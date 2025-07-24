@@ -4,6 +4,7 @@ from sqlalchemy.dialects.postgresql import UUID
 
 db = SQLAlchemy()
 
+
 class Room(db.Model):
     id = db.Column(db.String(10), primary_key=True)
     member_count = db.Column(db.Integer, default=0)
@@ -16,7 +17,8 @@ class Room(db.Model):
 class Member(db.Model):
     id = db.Column(db.String(36), primary_key=True)
     room_id = db.Column(db.String(10), db.ForeignKey("room.id"))
-    member_name = db.Column(db.String(50))
+    name = db.Column(db.String(50))
+
 
 class Message(db.Model):
     id = db.Column(db.Integer, primary_key=True)
