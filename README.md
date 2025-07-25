@@ -1,6 +1,6 @@
-# In this repo i created a messaging app using Flask, SocketIO and SQLite. 
+## In this repo i created a messaging app using Flask, SocketIO and SQLite. 
 
-# Features include:
+## Features include:
 - unique user identification using uuid4
 - real-time messaging with Flask-SocketIO
 - reload-safe sessions
