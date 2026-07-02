@@ -1,0 +1,8 @@
+services: 
+  flaskchat:
+    container_name: flaskchat-container
+
+    build: .
+    
+    ports: 
+      - "5000:5000"
