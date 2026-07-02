@@ -36,3 +36,18 @@ Another user can join by entering the room code.
 - server-side message history saved in SQLite
 - Minimal UI (Bootstrap based)
 
+## Running with Docker
+
+### Clone the repository:
+
+```bash
+git clone https://github.com/jonasolivernicolaysen/FlaskChat.git
+cd FlaskChat
+```
+### Build and start the application
+```bash
+docker compose up --build
+```
+
+Open your browser and navigate to http://localhost:5000
+
